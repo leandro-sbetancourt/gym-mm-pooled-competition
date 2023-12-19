@@ -302,7 +302,7 @@ class TradingEnvironment(gym.Env):
 
     def _get_stochastic_processes(self):
         stochastic_processes = dict()
-        for process_name in ["midprice_model", "arrival_model", "fill_probability_model", "price_impact_model"]:
+        for process_name in ["midprice_model", "arrival_model", "fill_probability_model", "price_impact_model", "competition_inventory_model"]:
             process: StochasticProcessModel = getattr(self.model_dynamics, process_name)
             if process is not None:
                 stochastic_processes[process_name] = process
