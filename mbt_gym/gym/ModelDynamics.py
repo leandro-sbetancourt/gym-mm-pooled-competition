@@ -13,6 +13,7 @@ from mbt_gym.stochastic_processes.arrival_models import ArrivalModel
 from mbt_gym.stochastic_processes.fill_probability_models import FillProbabilityModel
 from mbt_gym.stochastic_processes.midprice_models import MidpriceModel
 from mbt_gym.stochastic_processes.price_impact_models import PriceImpactModel
+from mbt_gym.stochastic_processes.competition_inventory import CompetitionInventoryModel
 
 
 class ModelDynamics(metaclass=abc.ABCMeta):
@@ -21,6 +22,7 @@ class ModelDynamics(metaclass=abc.ABCMeta):
         midprice_model : MidpriceModel  = None,
         arrival_model : ArrivalModel  = None,
         fill_probability_model : FillProbabilityModel  = None,
+        competition_inventory_model : CompetitionInventoryModel = None,
         price_impact_model : PriceImpactModel = None,
         num_trajectories: int = 1,
         seed: int = None,
@@ -28,6 +30,7 @@ class ModelDynamics(metaclass=abc.ABCMeta):
         self.midprice_model = midprice_model
         self.arrival_model = arrival_model
         self.fill_probability_model = fill_probability_model
+        self.competition_inventory_model = competition_inventory_model
         self.price_impact_model = price_impact_model
         self.num_trajectories = num_trajectories
         self.rng = default_rng(seed)
@@ -273,3 +276,54 @@ class TradinghWithSpeedModelDynamics(ModelDynamics):
     def get_required_stochastic_processes(self):
         processes = ["price_impact_model"]
         return processes
+
+
+
+class CompetitionLimitOrderModelDynamics(ModelDynamics):
+    """ModelDynamics for 'limit' and competition."""
+    def __init__(
+        self,
+        midprice_model : MidpriceModel  = None,
+        arrival_model : ArrivalModel  = None,
+        fill_probability_model : FillProbabilityModel  = None,
+        competition_inventory_model : CompetitionInventoryModel = None,
+        num_trajectories: int = 1,
+        seed: int = None,
+        max_depth : float = None,
+    ):
+        super().__init__(midprice_model = midprice_model,
+                        arrival_model = arrival_model,
+                        fill_probability_model = fill_probability_model, 
+                        competition_inventory_model = competition_inventory_model,
+                        num_trajectories = num_trajectories,
+                        seed = seed)
+        self.max_depth = max_depth or self._get_max_depth()
+        self.required_processes = self.get_required_stochastic_processes()
+        self._check_processes_are_not_none(self.required_processes)
+        self.round_initial_inventory = True
+        
+    def update_state(self, arrivals: np.ndarray, fills: np.ndarray, action: np.ndarray):
+        self.state[:, INVENTORY_INDEX] += np.sum(arrivals * fills * -self.fill_multiplier, axis=1)
+        self.state[:, CASH_INDEX] += np.sum(
+                self.fill_multiplier
+                * arrivals
+                * fills
+                * (self.midprice + self._limit_depths(action) * self.fill_multiplier),
+                axis=1,
+            )
+
+    def get_action_space(self) -> gym.spaces.Space:
+        assert self.max_depth is not None, "For limit orders max_depth cannot be None."
+        # agent chooses spread on bid and ask
+        return gym.spaces.Box(low=np.float32(0.0), high=np.float32(self.max_depth), shape=(2,))
+    
+    def get_required_stochastic_processes(self):
+        processes = ["arrival_model", "fill_probability_model", "competition_inventory_model"]
+        return processes
+
+    def get_arrivals_and_fills(self, action: np.ndarray):
+        arrivals = self.arrival_model.get_arrivals()
+        depths = self._limit_depths(action)
+        competition_depths = self.competition_inventory_model.get_competition_depth()
+        fills = self.fill_probability_model.get_fills(depths, competition_depths)
+        return arrivals, fills
