@@ -97,6 +97,7 @@ class LimitOrderModelDynamics(ModelDynamics):
         num_trajectories: int = 1,
         seed: int = None,
         max_depth : float = None,
+        min_depth : float = None
     ):
         super().__init__(midprice_model = midprice_model,
                         arrival_model = arrival_model,
@@ -104,6 +105,7 @@ class LimitOrderModelDynamics(ModelDynamics):
                         num_trajectories = num_trajectories,
                         seed = seed)
         self.max_depth = max_depth or self._get_max_depth()
+        self.min_depth = min_depth or 0.0
         self.required_processes = self.get_required_stochastic_processes()
         self._check_processes_are_not_none(self.required_processes)
         self.round_initial_inventory = True
@@ -121,7 +123,7 @@ class LimitOrderModelDynamics(ModelDynamics):
     def get_action_space(self) -> gym.spaces.Space:
         assert self.max_depth is not None, "For limit orders max_depth cannot be None."
         # agent chooses spread on bid and ask
-        return gym.spaces.Box(low=np.float32(0.0), high=np.float32(self.max_depth), shape=(2,))
+        return gym.spaces.Box(low=np.float32(self.min_depth), high=np.float32(self.max_depth), shape=(2,))
     
     def get_required_stochastic_processes(self):
         processes = ["arrival_model", "fill_probability_model"]
@@ -290,6 +292,7 @@ class CompetitionLimitOrderModelDynamics(ModelDynamics):
         num_trajectories: int = 1,
         seed: int = None,
         max_depth : float = None,
+        min_depth : float = None,
     ):
         super().__init__(midprice_model = midprice_model,
                         arrival_model = arrival_model,
@@ -298,6 +301,7 @@ class CompetitionLimitOrderModelDynamics(ModelDynamics):
                         num_trajectories = num_trajectories,
                         seed = seed)
         self.max_depth = max_depth or self._get_max_depth()
+        self.min_depth = min_depth or 0.0
         self.required_processes = self.get_required_stochastic_processes()
         self._check_processes_are_not_none(self.required_processes)
         self.round_initial_inventory = True
@@ -315,7 +319,7 @@ class CompetitionLimitOrderModelDynamics(ModelDynamics):
     def get_action_space(self) -> gym.spaces.Space:
         assert self.max_depth is not None, "For limit orders max_depth cannot be None."
         # agent chooses spread on bid and ask
-        return gym.spaces.Box(low=np.float32(0.0), high=np.float32(self.max_depth), shape=(2,))
+        return gym.spaces.Box(low=np.float32(self.min_depth), high=np.float32(self.max_depth), shape=(2,))
     
     def get_required_stochastic_processes(self):
         processes = ["arrival_model", "fill_probability_model", "competition_inventory_model"]
