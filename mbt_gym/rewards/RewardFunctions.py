@@ -204,9 +204,9 @@ class BhsbMmCriterion(RewardFunction):
             )
             - self.beta 
             * (
-                next_state[:, COMPETITION_STATE_INDEX] - current_state[:, COMPETITION_STATE_INDEX]
+              next_state[:, INVENTORY_INDEX] * (  next_state[:, COMPETITION_STATE_INDEX] +  next_state[:, COMPETITION_STATE_INDEX + 1])
+              - current_state[:, INVENTORY_INDEX] * (current_state[:, COMPETITION_STATE_INDEX] + current_state[:, COMPETITION_STATE_INDEX + 1] )
             ) 
-            - self.sigma * self.beta * ( next_state[:, COMPETITION_STATE_INDEX+1] - current_state[:, COMPETITION_STATE_INDEX+1])
         )
 
     def reset(self, initial_state: np.ndarray):
