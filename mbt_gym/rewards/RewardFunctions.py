@@ -200,9 +200,8 @@ class BhsbMmCriterion(RewardFunction):
             * (
                 next_state[:, INVENTORY_INDEX] ** self.inventory_exponent
                 - current_state[:, INVENTORY_INDEX] ** self.inventory_exponent
-                + dt / self.episode_length * self.initial_inventory**self.inventory_exponent
             )
-            - self.beta 
+            + self.beta 
             * (
               next_state[:, INVENTORY_INDEX] * (  next_state[:, COMPETITION_STATE_INDEX] +  next_state[:, COMPETITION_STATE_INDEX + 1])
               - current_state[:, INVENTORY_INDEX] * (current_state[:, COMPETITION_STATE_INDEX] + current_state[:, COMPETITION_STATE_INDEX + 1] )
