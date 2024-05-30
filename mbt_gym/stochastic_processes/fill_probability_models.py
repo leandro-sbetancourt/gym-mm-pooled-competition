@@ -67,7 +67,7 @@ class ExponentialFillFunction(FillProbabilityModel):
 
 class CompetitionFillFunction(FillProbabilityModel):
     def __init__(
-        self, fill_exponent: float = 1.5, step_size: float = 0.1, num_trajectories: int = 1, seed: Optional[int] = None
+        self, fill_exponent: float = 1.5, step_size: float = 0.1, num_trajectories: int = 1, seed: Optional[int] = None, tick_size: float = 0.0,
     ):
         self.fill_exponent = fill_exponent
         super().__init__(
@@ -82,7 +82,7 @@ class CompetitionFillFunction(FillProbabilityModel):
 
     def _get_fill_probabilities(self, depths: np.ndarray,  competition: np.ndarray) -> np.ndarray:
         # TODO ROBERT: make sure they are the same shape
-        return (depths<=competition)*np.ones(depths.shape) + (depths>competition)*np.exp(-self.fill_exponent * (depths - competition))
+        return (depths-self.tick_size<competition)*np.ones(depths.shape) + (depths-self.tick_size>=competition)*np.exp(-self.fill_exponent * (depths - competition))
 
     def get_fills(self, depths: np.ndarray, competition: np.ndarray) -> np.ndarray:
         assert depths.shape == (self.num_trajectories, 2), (
