@@ -47,11 +47,11 @@ class BhsbInventoryModel(CompetitionInventoryModel):
         self.beta = beta
         self.sigma = sigma
         super().__init__(
-            min_value=np.array([[min_value_inventory]]),
-            max_value=np.array([[max_value_inventory]]),
+            min_value=np.array([[min_value_inventory, min_value_inventory]]),
+            max_value=np.array([[max_value_inventory, min_value_inventory]]),
             step_size=step_size,
             terminal_time=0.0,
-            initial_state=np.array([[0]]),
+            initial_state=np.array([[0, 0]]),
             num_trajectories=num_trajectories,
             seed=None,
         )
@@ -59,9 +59,13 @@ class BhsbInventoryModel(CompetitionInventoryModel):
     def update(self, arrivals: np.ndarray, fills: np.ndarray, actions: np.ndarray, state: np.ndarray = None):
         ones = np.ones((self.num_trajectories, 1))
         fill_multiplier = np.append(-ones, ones, axis=1)
-        self.current_state = self.current_state + np.reshape(np.sum(arrivals * (1. - fills) * -fill_multiplier, axis=1),(self.num_trajectories,1)) + self.sigma * sqrt(self.step_size)*sqrt(self.step_size) * self.rng.normal(size=(self.num_trajectories, 1))
-
+        self.current_state[:,0] = (self.current_state[:,0] 
+                                + np.reshape(np.sum(arrivals * (1. - fills) * -fill_multiplier, axis=1), (self.num_trajectories,)) )
+        self.current_state[:,1] = (self.current_state[:,1]
+                                + self.sigma *sqrt(self.step_size) * self.rng.normal(size=(self.num_trajectories, )))
+        
     def get_competition_depth(self):
-        comp_ask_depths = self.alpha + self.beta * self.current_state
-        comp_bid_depths = self.alpha + self.beta * self.current_state
+        #print(self.current_state.shape)
+        comp_ask_depths = self.alpha + self.beta * np.sum(self.current_state, axis=1).reshape(-1,1)
+        comp_bid_depths = self.alpha - self.beta * np.sum(self.current_state, axis=1).reshape(-1,1)
         return np.append(comp_bid_depths, comp_ask_depths, axis=1)
