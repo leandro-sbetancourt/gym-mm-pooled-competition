@@ -2,7 +2,7 @@ import abc
 from typing import Union
 
 import numpy as np
-from mbt_gym.gym.index_names import CASH_INDEX, INVENTORY_INDEX, TIME_INDEX, ASSET_PRICE_INDEX
+from mbt_gym.gym.index_names import CASH_INDEX, INVENTORY_INDEX, TIME_INDEX, ASSET_PRICE_INDEX, COMPETITION_STATE_INDEX
 
 
 class RewardFunction(metaclass=abc.ABCMeta):
@@ -164,3 +164,52 @@ class ExponentialUtility(RewardFunction):
 
     def reset(self, initial_state: np.ndarray):
         pass
+
+
+
+class BhsbMmCriterion(RewardFunction):
+    """Competition reward function."""
+
+    def __init__(
+        self,
+        per_step_inventory_aversion: float = 0.01,
+        terminal_inventory_aversion: float = 0.0,
+        beta: float = 0.01,
+        sigma: float = 1.0,
+        inventory_exponent: float = 2.0,
+        terminal_time: float = 1.0,
+    ):
+        self.per_step_inventory_aversion = per_step_inventory_aversion
+        self.terminal_inventory_aversion = terminal_inventory_aversion
+        self.pnl = PnL()
+        self.beta = beta
+        self.sigma = sigma
+        self.inventory_exponent = inventory_exponent
+        self.terminal_time = terminal_time
+        self.initial_inventory = None
+        self.episode_length = None
+
+    def calculate(
+        self, current_state: np.ndarray, action: np.ndarray, next_state: np.ndarray, is_terminal_step: bool = False
+    ) -> float:
+        dt = next_state[:, TIME_INDEX] - current_state[:, TIME_INDEX]
+        return (
+            self.pnl.calculate(current_state, action, next_state, is_terminal_step)
+            - dt * self.per_step_inventory_aversion * next_state[:, INVENTORY_INDEX] ** self.inventory_exponent
+            - self.terminal_inventory_aversion
+            * (
+                next_state[:, INVENTORY_INDEX] ** self.inventory_exponent
+                - current_state[:, INVENTORY_INDEX] ** self.inventory_exponent
+                + dt / self.episode_length * self.initial_inventory**self.inventory_exponent
+            )
+            - self.beta 
+            * (
+                next_state[:, COMPETITION_STATE_INDEX] - current_state[:, COMPETITION_STATE_INDEX]
+            ) 
+            - self.sigma * self.beta * ( next_state[:, COMPETITION_STATE_INDEX+1] - current_state[:, COMPETITION_STATE_INDEX+1])
+        )
+
+    def reset(self, initial_state: np.ndarray):
+        self.initial_inventory = initial_state[:, INVENTORY_INDEX]
+        self.episode_length = self.terminal_time - initial_state[:, TIME_INDEX]
+
