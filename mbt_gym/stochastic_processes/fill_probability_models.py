@@ -70,6 +70,7 @@ class CompetitionFillFunction(FillProbabilityModel):
         self, fill_exponent: float = 1.5, step_size: float = 0.1, num_trajectories: int = 1, seed: Optional[int] = None, tick_size: float = 0.0,
     ):
         self.fill_exponent = fill_exponent
+        self.tick_size = tick_size
         super().__init__(
             min_value=np.array([[]]),
             max_value=np.array([[]]),
