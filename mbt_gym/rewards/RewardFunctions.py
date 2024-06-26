@@ -174,6 +174,8 @@ class BhsbMmCriterion(RewardFunction):
         self,
         per_step_inventory_aversion: float = 0.01,
         terminal_inventory_aversion: float = 0.0,
+        a_tilde: float = 0.001,
+        b_tilde: float = 0.001,
         beta: float = 0.01,
         sigma: float = 1.0,
         inventory_exponent: float = 2.0,
@@ -182,6 +184,9 @@ class BhsbMmCriterion(RewardFunction):
         self.per_step_inventory_aversion = per_step_inventory_aversion
         self.terminal_inventory_aversion = terminal_inventory_aversion
         self.pnl = PnL()
+        self.a_tilde = a_tilde
+        self.b_tilde = b_tilde
+        self.half_ab = 0.5 * (a_tilde - b_tilde)
         self.beta = beta
         self.sigma = sigma
         self.inventory_exponent = inventory_exponent
@@ -201,10 +206,10 @@ class BhsbMmCriterion(RewardFunction):
                 next_state[:, INVENTORY_INDEX] ** self.inventory_exponent
                 - current_state[:, INVENTORY_INDEX] ** self.inventory_exponent
             )
-            + self.beta 
-            * (
-              next_state[:, INVENTORY_INDEX] * (  next_state[:, COMPETITION_STATE_INDEX] +  next_state[:, COMPETITION_STATE_INDEX + 1])
-              - current_state[:, INVENTORY_INDEX] * (current_state[:, COMPETITION_STATE_INDEX] + current_state[:, COMPETITION_STATE_INDEX + 1] )
+            # so far we have X + Q S - gamma Q^2 - phi integral Q^2
+            + (
+              next_state[:, INVENTORY_INDEX] * ( self.half_ab - self.beta * next_state[:, COMPETITION_STATE_INDEX] -  next_state[:, COMPETITION_STATE_INDEX + 1])
+              - current_state[:, INVENTORY_INDEX] * ( self.half_ab - self.beta * current_state[:, COMPETITION_STATE_INDEX] - current_state[:, COMPETITION_STATE_INDEX + 1] )
             ) 
         )
 
