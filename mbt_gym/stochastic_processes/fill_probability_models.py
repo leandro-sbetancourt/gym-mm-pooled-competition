@@ -83,7 +83,7 @@ class CompetitionFillFunction(FillProbabilityModel):
 
     def _get_fill_probabilities(self, depths: np.ndarray,  competition: np.ndarray) -> np.ndarray:
         # TODO ROBERT: make sure they are the same shape
-        return (depths-self.tick_size<competition)*np.ones(depths.shape) + (depths-self.tick_size>=competition)*np.exp(-self.fill_exponent * (depths - competition))
+        return (depths-self.tick_size<competition)*np.ones(depths.shape) + (depths-self.tick_size>=competition)*np.exp(-self.fill_exponent * (depths - self.tick_size - competition))
 
     def get_fills(self, depths: np.ndarray, competition: np.ndarray) -> np.ndarray:
         assert depths.shape == (self.num_trajectories, 2), (
