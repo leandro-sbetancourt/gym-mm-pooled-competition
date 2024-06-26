@@ -66,6 +66,6 @@ class BhsbInventoryModel(CompetitionInventoryModel):
         
     def get_competition_depth(self):
         #print(self.current_state.shape)
-        comp_ask_depths = self.alpha + self.beta * np.sum(self.current_state, axis=1).reshape(-1,1)
-        comp_bid_depths = self.alpha - self.beta * np.sum(self.current_state, axis=1).reshape(-1,1)
+        comp_ask_depths = self.alpha - self.beta * self.current_state[:,0].reshape(-1,1) - self.current_state[:,1].reshape(-1,1)
+        comp_bid_depths = self.alpha + self.beta * self.current_state[:,0].reshape(-1,1) + self.current_state[:,1].reshape(-1,1)
         return np.append(comp_bid_depths, comp_ask_depths, axis=1)
