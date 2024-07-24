@@ -1,9 +1,5 @@
 .DS_Store
 
-# Update notebooks manually, if necessary
-notebooks
-TMP_NOTEBOOKS
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
